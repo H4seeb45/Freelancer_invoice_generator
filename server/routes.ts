@@ -1,4 +1,4 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -12,27 +12,29 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { setupAuth } from "./auth";
+
+// Middleware to check if user is authenticated
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: 'Unauthorized' });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
+  
   // Prefix all routes with /api
   const apiRouter = express.Router();
   app.use('/api', apiRouter);
 
-  // Get current user (for now, just return the sample user)
-  apiRouter.get('/user', async (req: Request, res: Response) => {
-    const user = await storage.getUser(1);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Don't return the password
-    const { password, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
-  });
+  // Current user is now handled by the auth module
   
-  // Dashboard stats
-  apiRouter.get('/dashboard/stats', async (req: Request, res: Response) => {
-    const userId = 1; // Using the sample user
+  // Dashboard stats - requires authentication
+  apiRouter.get('/dashboard/stats', isAuthenticated, async (req: Request, res: Response) => {
+    const userId = req.user!.id;
     try {
       const stats = await storage.getDashboardStats(userId);
       res.json(stats);
@@ -41,9 +43,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Client routes
-  apiRouter.get('/clients', async (req: Request, res: Response) => {
-    const userId = 1; // Using the sample user
+  // Client routes - requires authentication
+  apiRouter.get('/clients', isAuthenticated, async (req: Request, res: Response) => {
+    const userId = req.user!.id;
     try {
       const clients = await storage.getClientsByUserId(userId);
       res.json(clients);
@@ -52,21 +54,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.get('/clients/:id', async (req: Request, res: Response) => {
+  apiRouter.get('/clients/:id', isAuthenticated, async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
       const client = await storage.getClient(Number(id));
       if (!client) {
         return res.status(404).json({ message: 'Client not found' });
       }
+      
+      // Ensure the client belongs to the logged-in user
+      if (client.userId !== req.user!.id) {
+        return res.status(403).json({ message: 'Unauthorized access to this client' });
+      }
+      
       res.json(client);
     } catch (error) {
       res.status(500).json({ message: 'Failed to fetch client' });
     }
   });
 
-  apiRouter.post('/clients', async (req: Request, res: Response) => {
-    const userId = 1; // Using the sample user
+  apiRouter.post('/clients', isAuthenticated, async (req: Request, res: Response) => {
+    const userId = req.user!.id;
     
     try {
       const validatedData = clientFormSchema.parse(req.body);
@@ -82,15 +90,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.put('/clients/:id', async (req: Request, res: Response) => {
+  apiRouter.put('/clients/:id', isAuthenticated, async (req: Request, res: Response) => {
     const { id } = req.params;
+    const userId = req.user!.id;
     
     try {
-      const validatedData = clientFormSchema.parse(req.body);
-      const client = await storage.updateClient(Number(id), validatedData);
-      if (!client) {
+      // First check if the client exists and belongs to the user
+      const existingClient = await storage.getClient(Number(id));
+      if (!existingClient) {
         return res.status(404).json({ message: 'Client not found' });
       }
+      
+      if (existingClient.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this client' });
+      }
+      
+      const validatedData = clientFormSchema.parse(req.body);
+      const client = await storage.updateClient(Number(id), validatedData);
       res.json(client);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -101,23 +117,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.delete('/clients/:id', async (req: Request, res: Response) => {
+  apiRouter.delete('/clients/:id', isAuthenticated, async (req: Request, res: Response) => {
     const { id } = req.params;
+    const userId = req.user!.id;
     
     try {
-      const success = await storage.deleteClient(Number(id));
-      if (!success) {
+      // First check if the client exists and belongs to the user
+      const existingClient = await storage.getClient(Number(id));
+      if (!existingClient) {
         return res.status(404).json({ message: 'Client not found' });
       }
+      
+      if (existingClient.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this client' });
+      }
+      
+      const success = await storage.deleteClient(Number(id));
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: 'Failed to delete client' });
     }
   });
 
-  // Invoice routes
-  apiRouter.get('/invoices', async (req: Request, res: Response) => {
-    const userId = 1; // Using the sample user
+  // Invoice routes - requires authentication
+  apiRouter.get('/invoices', isAuthenticated, async (req: Request, res: Response) => {
+    const userId = req.user!.id;
     try {
       const invoices = await storage.getInvoicesByUserId(userId);
       
@@ -136,13 +160,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.get('/invoices/:id', async (req: Request, res: Response) => {
+  // Generate next invoice number
+  apiRouter.get('/invoices/next-number', isAuthenticated, async (_req: Request, res: Response) => {
+    try {
+      const invoiceNumber = await storage.generateInvoiceNumber();
+      res.json({ invoiceNumber });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to generate invoice number' });
+    }
+  });
+
+  apiRouter.get('/invoices/:id', isAuthenticated, async (req: Request, res: Response) => {
     const { id } = req.params;
+    const userId = req.user!.id;
     
     try {
       const invoice = await storage.getInvoice(Number(id));
       if (!invoice) {
         return res.status(404).json({ message: 'Invoice not found' });
+      }
+      
+      // Ensure the invoice belongs to the logged-in user
+      if (invoice.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this invoice' });
       }
       
       // Get the client
@@ -161,22 +201,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate next invoice number
-  apiRouter.get('/invoices/next-number', async (_req: Request, res: Response) => {
-    try {
-      const invoiceNumber = await storage.generateInvoiceNumber();
-      res.json({ invoiceNumber });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to generate invoice number' });
-    }
-  });
-
-  apiRouter.post('/invoices', async (req: Request, res: Response) => {
-    const userId = 1; // Using the sample user
+  apiRouter.post('/invoices', isAuthenticated, async (req: Request, res: Response) => {
+    const userId = req.user!.id;
     
     try {
       // Validate form data
       const validatedData = invoiceFormSchema.parse(req.body);
+      
+      // Verify client belongs to user
+      const client = await storage.getClient(validatedData.clientId);
+      if (!client || client.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this client' });
+      }
       
       // Prepare invoice data
       const subtotal = validatedData.lineItems.reduce((sum, item) => sum + Number(item.amount), 0);
@@ -227,12 +263,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.put('/invoices/:id', async (req: Request, res: Response) => {
+  apiRouter.put('/invoices/:id', isAuthenticated, async (req: Request, res: Response) => {
     const { id } = req.params;
+    const userId = req.user!.id;
     
     try {
       // Validate form data
       const validatedData = invoiceFormSchema.parse(req.body);
+      
+      // First check if the invoice exists and belongs to the user
+      const existingInvoice = await storage.getInvoice(Number(id));
+      if (!existingInvoice) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+      
+      if (existingInvoice.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this invoice' });
+      }
+      
+      // Verify client belongs to user
+      const client = await storage.getClient(validatedData.clientId);
+      if (!client || client.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this client' });
+      }
       
       // Prepare invoice data
       const subtotal = validatedData.lineItems.reduce((sum, item) => sum + Number(item.amount), 0);
@@ -255,18 +308,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update the invoice
       const invoice = await storage.updateInvoice(Number(id), invoiceData);
-      if (!invoice) {
-        return res.status(404).json({ message: 'Invoice not found' });
-      }
       
       // Delete existing line items
-      await storage.deleteLineItemsByInvoiceId(invoice.id);
+      await storage.deleteLineItemsByInvoiceId(invoice!.id);
       
       // Create new line items
       const lineItems = await Promise.all(
         validatedData.lineItems.map(item => 
           storage.createLineItem({
-            invoiceId: invoice.id,
+            invoiceId: invoice!.id,
             description: item.description,
             quantity: item.quantity.toString(),
             rate: item.rate.toString(),
@@ -285,35 +335,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.patch('/invoices/:id/status', async (req: Request, res: Response) => {
+  apiRouter.patch('/invoices/:id/status', isAuthenticated, async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
+    const userId = req.user!.id;
     
     try {
+      // First check if the invoice exists and belongs to the user
+      const existingInvoice = await storage.getInvoice(Number(id));
+      if (!existingInvoice) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+      
+      if (existingInvoice.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this invoice' });
+      }
+      
       // Validate status
       if (!Object.values(InvoiceStatus).includes(status)) {
         return res.status(400).json({ message: 'Invalid status' });
       }
       
       const invoice = await storage.updateInvoiceStatus(Number(id), status);
-      if (!invoice) {
-        return res.status(404).json({ message: 'Invoice not found' });
-      }
-      
       res.json(invoice);
     } catch (error) {
       res.status(500).json({ message: 'Failed to update invoice status' });
     }
   });
 
-  apiRouter.delete('/invoices/:id', async (req: Request, res: Response) => {
+  apiRouter.delete('/invoices/:id', isAuthenticated, async (req: Request, res: Response) => {
     const { id } = req.params;
+    const userId = req.user!.id;
     
     try {
-      const success = await storage.deleteInvoice(Number(id));
-      if (!success) {
+      // First check if the invoice exists and belongs to the user
+      const existingInvoice = await storage.getInvoice(Number(id));
+      if (!existingInvoice) {
         return res.status(404).json({ message: 'Invoice not found' });
       }
+      
+      if (existingInvoice.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this invoice' });
+      }
+      
+      const success = await storage.deleteInvoice(Number(id));
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: 'Failed to delete invoice' });

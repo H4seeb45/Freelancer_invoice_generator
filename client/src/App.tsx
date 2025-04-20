@@ -10,35 +10,39 @@ import InvoiceDetails from "@/pages/InvoiceDetails";
 import CreateInvoice from "@/pages/CreateInvoice";
 import Clients from "@/pages/Clients";
 import Settings from "@/pages/Settings";
+import AuthPage from "@/pages/auth-page";
 import Layout from "@/components/Layout";
 import { InvoiceProvider } from "./context/InvoiceContext";
-
-function Router() {
-  return (
-    <Switch>
-      {/* Add pages */}
-      <Route path="/" component={Dashboard} />
-      <Route path="/invoices" component={Invoices} />
-      <Route path="/invoices/create" component={CreateInvoice} />
-      <Route path="/invoices/:id" component={InvoiceDetails} />
-      <Route path="/clients" component={Clients} />
-      <Route path="/settings" component={Settings} />
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+import { AuthProvider } from "./hooks/use-auth";
+import { ProtectedRoute } from "./lib/protected-route";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <InvoiceProvider>
-          <Layout>
+        <AuthProvider>
+          <InvoiceProvider>
             <Toaster />
-            <Router />
-          </Layout>
-        </InvoiceProvider>
+            <Switch>
+              <Route path="/auth">
+                <AuthPage />
+              </Route>
+              <Route path="/:rest*">
+                <Layout>
+                  <Switch>
+                    <ProtectedRoute path="/" component={Dashboard} />
+                    <ProtectedRoute path="/invoices" component={Invoices} />
+                    <ProtectedRoute path="/invoices/create" component={CreateInvoice} />
+                    <ProtectedRoute path="/invoices/:id" component={InvoiceDetails} />
+                    <ProtectedRoute path="/clients" component={Clients} />
+                    <ProtectedRoute path="/settings" component={Settings} />
+                    <Route component={NotFound} />
+                  </Switch>
+                </Layout>
+              </Route>
+            </Switch>
+          </InvoiceProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
