@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
+import { useAuth } from "../hooks/use-auth";
 import { 
   FileTextIcon, 
   ClockIcon, 
@@ -19,6 +21,15 @@ interface InvoiceWithClient extends Invoice {
 }
 
 export default function Dashboard() {
+  const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
+  
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, isLoading, navigate]);
   // Fetch dashboard stats
   const { data: stats, isLoading: isLoadingStats } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
@@ -88,11 +99,9 @@ export default function Dashboard() {
             isLoading={isLoadingInvoices} 
           />
           <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
-            <Link href="/invoices">
-              <a className="text-sm font-medium text-primary hover:text-primary-dark">
-                View all invoices
-                <span aria-hidden="true"> &rarr;</span>
-              </a>
+            <Link href="/invoices" className="text-sm font-medium text-primary hover:text-primary-dark">
+              View all invoices
+              <span aria-hidden="true"> &rarr;</span>
             </Link>
           </div>
         </div>

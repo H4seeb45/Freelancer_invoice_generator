@@ -40,10 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     staleTime: 0, // Always fetch fresh authentication data
-    retry: false,
-    onError: (error) => {
-      console.error("Error fetching user:", error);
-    }
+    retry: false
   });
 
   const loginMutation = useMutation({
@@ -53,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
@@ -70,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({

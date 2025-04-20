@@ -45,9 +45,10 @@ export default function AuthPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate("/");
+      console.log("User authenticated, redirecting to dashboard");
+      window.location.href = "/";
     }
-  }, [user, navigate]);
+  }, [user]);
 
   // Login form
   const loginForm = useForm<LoginFormValues>({
