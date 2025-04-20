@@ -38,6 +38,9 @@ function MainApp() {
         <Route path="/" component={Dashboard} />
         <Route path="/invoices" component={Invoices} />
         <Route path="/invoices/create" component={CreateInvoice} />
+        <Route path="/invoices/:id/edit">
+          {(params) => <CreateInvoice params={params} />}
+        </Route>
         <Route path="/invoices/:id">
           {(params) => <InvoiceDetails params={params} />}
         </Route>
