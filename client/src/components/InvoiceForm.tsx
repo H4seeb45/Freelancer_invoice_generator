@@ -69,19 +69,19 @@ export default function InvoiceForm({ onSuccess, initialData, clients }: Invoice
 
   // Generate invoice number if not provided
   useEffect(() => {
-    if (!initialData?.invoiceNumber) {
+    if (!form.getValues('invoiceNumber')) {
       const fetchInvoiceNumber = async () => {
         try {
           const response = await fetch('/api/invoices/next-number');
           const data = await response.json();
-          form.setValue('invoiceNumber', data.invoiceNumber);
+          form.setValue('invoiceNumber', data.invoiceNumber, { shouldValidate: true });
         } catch (error) {
           console.error('Failed to fetch invoice number:', error);
         }
       };
       fetchInvoiceNumber();
     }
-  }, [initialData?.invoiceNumber, form]);
+  }, [form]);
 
   // Update client if initialData has clientId
   useEffect(() => {
@@ -217,7 +217,11 @@ export default function InvoiceForm({ onSuccess, initialData, clients }: Invoice
                 <FormItem>
                   <FormLabel>Invoice Number</FormLabel>
                   <FormControl>
-                    <Input {...field} readOnly className="bg-gray-100 font-mono" />
+                    <Input 
+                      {...field} 
+                      className={initialData?.invoiceNumber ? "bg-gray-100 font-mono" : "font-mono"}
+                      readOnly={Boolean(field.value)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
