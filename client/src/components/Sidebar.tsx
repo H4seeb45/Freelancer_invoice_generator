@@ -1,9 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { useUser } from "../context/UserContext";
+import { useAuth } from "../hooks/use-auth";
 
 export default function Sidebar() {
   const [location] = useLocation();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   return (
     <aside className="hidden md:flex md:flex-col md:w-64 bg-white border-r border-gray-200 shadow-sm">
@@ -124,12 +124,12 @@ export default function Sidebar() {
 
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center">
-          <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-            {user?.fullName?.charAt(0) || "U"}
+          <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center">
+            {user?.username?.charAt(0).toUpperCase() || "U"}
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-700">
-              {user?.fullName || "Loading..."}
+              {user?.username || "Loading..."}
             </p>
             <p className="text-xs font-medium text-gray-500">Freelancer</p>
           </div>

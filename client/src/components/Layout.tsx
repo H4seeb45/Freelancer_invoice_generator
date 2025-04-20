@@ -1,12 +1,20 @@
 import { ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
+import { useAuth } from "../hooks/use-auth";
+import { LogOut } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const { user, logoutMutation } = useAuth();
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+  
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar (desktop only) */}
@@ -43,45 +51,23 @@ export default function Layout({ children }: LayoutProps) {
               </h1>
             </div>
             <div className="flex items-center">
+              <div className="hidden md:flex items-center mr-4">
+                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center mr-3">
+                  {user?.username?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.username || ""}
+                </span>
+              </div>
+              
               <button
                 type="button"
-                className="p-1 text-gray-500 rounded-full hover:text-gray-700 focus:outline-none"
-                aria-label="Notifications"
+                onClick={handleLogout}
+                className="p-1 text-gray-500 rounded-full hover:text-red-500 focus:outline-none flex items-center"
+                aria-label="Logout"
               >
-                <svg
-                  className="w-6 h-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                className="p-1 ml-3 text-gray-500 rounded-full hover:text-gray-700 focus:outline-none"
-                aria-label="More options"
-              >
-                <svg
-                  className="w-6 h-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                  />
-                </svg>
+                <LogOut className="w-5 h-5" />
+                <span className="hidden md:inline ml-2 text-sm">Logout</span>
               </button>
             </div>
           </div>

@@ -13,6 +13,7 @@ import {
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { setupAuth } from "./auth";
+import Stripe from "stripe";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
@@ -25,6 +26,14 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
+  
+  // Initialize Stripe
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('Missing required environment variable: STRIPE_SECRET_KEY');
+  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-03-31.basil',
+  });
   
   // Prefix all routes with /api
   const apiRouter = express.Router();
@@ -383,6 +392,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: 'Failed to delete invoice' });
     }
+  });
+
+  // Stripe payment routes
+  apiRouter.post('/create-payment-intent', isAuthenticated, async (req: Request, res: Response) => {
+    const { invoiceId } = req.body;
+    const userId = req.user!.id;
+    
+    if (!invoiceId) {
+      return res.status(400).json({ message: 'Invoice ID is required' });
+    }
+    
+    try {
+      // Fetch the invoice
+      const invoice = await storage.getInvoice(Number(invoiceId));
+      if (!invoice) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+      
+      // Ensure the invoice belongs to the logged-in user
+      if (invoice.userId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized access to this invoice' });
+      }
+      
+      // Create a payment intent with Stripe
+      const amount = Math.round(parseFloat(invoice.total) * 100); // Convert to cents
+      
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        metadata: {
+          invoiceId: invoice.id.toString(),
+          invoiceNumber: invoice.invoiceNumber,
+        },
+      });
+      
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      res.status(500).json({ message: 'Failed to create payment intent' });
+    }
+  });
+  
+  // Webhook for Stripe events
+  apiRouter.post('/stripe-webhook', async (req: Request, res: Response) => {
+    // This endpoint would be used for receiving webhook events from Stripe
+    // For production, you would need to verify the webhook signature
+    
+    res.status(200).json({ received: true });
   });
 
   const httpServer = createServer(app);
