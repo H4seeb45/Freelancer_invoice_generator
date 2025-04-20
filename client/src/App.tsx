@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Invoices from "@/pages/Invoices";
 import InvoiceDetails from "@/pages/InvoiceDetails";
 import CreateInvoice from "@/pages/CreateInvoice";
+import PaymentPage from "@/pages/PaymentPage";
 import Clients from "@/pages/Clients";
 import Settings from "@/pages/Settings";
 import AuthPage from "@/pages/auth-page";
@@ -40,6 +41,9 @@ function MainApp() {
         <Route path="/invoices/create" component={CreateInvoice} />
         <Route path="/invoices/:id/edit">
           {(params) => <CreateInvoice params={params} />}
+        </Route>
+        <Route path="/invoices/:id/pay">
+          {(params) => <PaymentPage id={params.id} />}
         </Route>
         <Route path="/invoices/:id">
           {(params) => <InvoiceDetails params={params} />}

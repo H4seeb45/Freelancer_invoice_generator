@@ -15,6 +15,7 @@ import {
   ClockIcon,
   AlertTriangleIcon,
   Edit3Icon,
+  CreditCardIcon,
 } from "lucide-react";
 
 interface InvoicePreviewProps {
