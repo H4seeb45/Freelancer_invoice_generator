@@ -115,24 +115,42 @@ export default function PaymentPage({ id }: PaymentPageProps) {
 
   // Get invoice details
   const { data, isLoading, error } = useQuery<InvoiceResponse>({
-    queryKey: ['/api/invoices', invoiceId],
+    queryKey: [`/api/invoices/${invoiceId}`],
     enabled: !!invoiceId,
   });
 
   // Create payment intent
   const createPaymentIntent = useMutation({
     mutationFn: async ({ invoiceId }: { invoiceId: number }) => {
-      const res = await apiRequest("POST", "/api/create-payment-intent", { invoiceId });
-      return res.json();
+      try {
+        const res = await apiRequest("POST", "/api/create-payment-intent", { invoiceId });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to create payment intent');
+        }
+        return await res.json();
+      } catch (error) {
+        console.error('Payment intent error:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
-      setClientSecret(data.clientSecret);
-      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+        queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      } else {
+        toast({
+          title: "Payment Error",
+          description: "No client secret received from the server",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: Error) => {
+      console.error('Payment mutation error:', error);
       toast({
         title: "Payment Failed",
-        description: error.message,
+        description: error.message || "Could not process payment request",
         variant: "destructive",
       });
     },
@@ -140,7 +158,8 @@ export default function PaymentPage({ id }: PaymentPageProps) {
 
   useEffect(() => {
     if (data?.invoice?.id && !clientSecret) {
-      createPaymentIntent.mutate({ invoiceId: data.invoice.id });
+      console.log('Initiating payment intent for invoice:', data.invoice.id);
+      createPaymentIntent.mutate({ invoiceId: Number(data.invoice.id) });
     }
   }, [data, clientSecret]);
 
@@ -165,9 +184,22 @@ export default function PaymentPage({ id }: PaymentPageProps) {
   const { invoice, client } = data;
 
   if (!clientSecret) {
+    if (createPaymentIntent.isError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+          <h2 className="text-xl font-semibold text-red-600">Payment Error</h2>
+          <p className="text-gray-700">
+            {createPaymentIntent.error?.message || "Unable to process payment request"}
+          </p>
+          <Button onClick={() => window.history.back()}>Go Back</Button>
+        </div>
+      );
+    }
+    
     return (
-      <div className="flex items-center justify-center h-[60vh]">
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-gray-600">Preparing payment form...</p>
       </div>
     );
   }
