@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useUser } from "../context/UserContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,6 +56,47 @@ export default function Settings() {
   const { user } = useUser();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("professional");
+  const [selectedColor, setSelectedColor] = useState("primary");
+  const [logoPreview, setLogoPreview] = useState<string | null>(user?.companyLogo || null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  
+  // Handle logo upload
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      toast({
+        title: "File too large",
+        description: "Please select an image under 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (JPG, PNG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setLogoPreview(result);
+      // In a real app, you would upload this to a server and get a URL back
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Trigger file input click
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
 
   // Profile form
   const profileForm = useForm<ProfileFormValues>({
@@ -107,6 +148,20 @@ export default function Settings() {
       setIsUpdating(false);
     }, 1000);
   };
+  
+  // Update template settings
+  const onUpdateTemplateSettings = () => {
+    setIsUpdating(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      toast({
+        title: "Template Updated",
+        description: `Your invoice template has been updated to "${selectedTemplate}" with the selected color.`,
+      });
+      setIsUpdating(false);
+    }, 1000);
+  };
 
   return (
     <>
@@ -134,19 +189,30 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-4 mb-6">
-                <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
-                  {user?.companyLogo ? (
+                <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                  {logoPreview ? (
                     <img 
-                      src={user.companyLogo} 
+                      src={logoPreview} 
                       alt="Company logo" 
-                      className="w-full h-full rounded-full object-cover"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <User className="w-8 h-8 text-gray-500" />
                   )}
                 </div>
                 <div>
-                  <Button variant="outline" size="sm">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={triggerFileUpload}
+                  >
                     Upload Logo
                   </Button>
                   <p className="text-xs text-gray-500 mt-1">
@@ -353,11 +419,14 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="border-2 border-primary cursor-pointer">
+                <Card 
+                  className={`cursor-pointer transition-all ${selectedTemplate === "professional" ? "border-2 border-primary" : "hover:border-2 hover:border-primary"}`}
+                  onClick={() => setSelectedTemplate("professional")}
+                >
                   <CardContent className="p-4">
                     <div className="aspect-[8.5/11] bg-gray-100 flex items-center justify-center">
                       <div className="w-4/5 h-4/5 bg-white shadow p-2">
-                        <div className="w-full h-1/6 bg-primary mb-2"></div>
+                        <div className={`w-full h-1/6 bg-${selectedColor} mb-2`}></div>
                         <div className="w-1/3 h-1 bg-gray-300 mb-2"></div>
                         <div className="w-full h-1/2 bg-gray-200 mb-2"></div>
                         <div className="w-full h-1/6 bg-gray-100"></div>
@@ -367,11 +436,14 @@ export default function Settings() {
                   </CardContent>
                 </Card>
                 
-                <Card className="cursor-pointer hover:border-2 hover:border-primary transition-all">
+                <Card 
+                  className={`cursor-pointer transition-all ${selectedTemplate === "minimal" ? "border-2 border-primary" : "hover:border-2 hover:border-primary"}`}
+                  onClick={() => setSelectedTemplate("minimal")}
+                >
                   <CardContent className="p-4">
                     <div className="aspect-[8.5/11] bg-gray-100 flex items-center justify-center">
                       <div className="w-4/5 h-4/5 bg-white shadow p-2">
-                        <div className="w-1/2 h-1/6 bg-gray-300 mb-2"></div>
+                        <div className={`w-1/2 h-1/6 bg-${selectedColor} mb-2`}></div>
                         <div className="w-1/3 h-1 bg-gray-300 mb-2"></div>
                         <div className="w-full h-1/2 bg-gray-200 mb-2"></div>
                         <div className="w-full h-1/6 bg-gray-100"></div>
@@ -381,11 +453,14 @@ export default function Settings() {
                   </CardContent>
                 </Card>
                 
-                <Card className="cursor-pointer hover:border-2 hover:border-primary transition-all">
+                <Card 
+                  className={`cursor-pointer transition-all ${selectedTemplate === "modern" ? "border-2 border-primary" : "hover:border-2 hover:border-primary"}`}
+                  onClick={() => setSelectedTemplate("modern")}
+                >
                   <CardContent className="p-4">
                     <div className="aspect-[8.5/11] bg-gray-100 flex items-center justify-center">
                       <div className="w-4/5 h-4/5 bg-white shadow p-2">
-                        <div className="h-1/6 bg-gray-300 mb-2 rounded-md"></div>
+                        <div className={`h-1/6 bg-${selectedColor} mb-2 rounded-md`}></div>
                         <div className="w-1/3 h-1 bg-gray-300 mb-2"></div>
                         <div className="w-full h-1/2 bg-gray-200 mb-2 rounded-md"></div>
                         <div className="w-full h-1/6 bg-gray-100 rounded-md"></div>
@@ -402,25 +477,35 @@ export default function Settings() {
                 <h3 className="text-lg font-medium mb-4">Template Colors</h3>
                 <div className="flex space-x-4">
                   <div 
-                    className="w-8 h-8 rounded-full bg-primary cursor-pointer ring-2 ring-offset-2 ring-primary"
+                    className={`w-8 h-8 rounded-full bg-primary cursor-pointer ${selectedColor === 'primary' ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
+                    onClick={() => setSelectedColor('primary')}
                   ></div>
                   <div 
-                    className="w-8 h-8 rounded-full bg-blue-500 cursor-pointer"
+                    className={`w-8 h-8 rounded-full bg-blue-500 cursor-pointer ${selectedColor === 'blue-500' ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`}
+                    onClick={() => setSelectedColor('blue-500')}
                   ></div>
                   <div 
-                    className="w-8 h-8 rounded-full bg-green-500 cursor-pointer"
+                    className={`w-8 h-8 rounded-full bg-green-500 cursor-pointer ${selectedColor === 'green-500' ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
+                    onClick={() => setSelectedColor('green-500')}
                   ></div>
                   <div 
-                    className="w-8 h-8 rounded-full bg-purple-500 cursor-pointer"
+                    className={`w-8 h-8 rounded-full bg-purple-500 cursor-pointer ${selectedColor === 'purple-500' ? 'ring-2 ring-offset-2 ring-purple-500' : ''}`}
+                    onClick={() => setSelectedColor('purple-500')}
                   ></div>
                   <div 
-                    className="w-8 h-8 rounded-full bg-orange-500 cursor-pointer"
+                    className={`w-8 h-8 rounded-full bg-orange-500 cursor-pointer ${selectedColor === 'orange-500' ? 'ring-2 ring-offset-2 ring-orange-500' : ''}`}
+                    onClick={() => setSelectedColor('orange-500')}
                   ></div>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end">
-              <Button>Save Template Settings</Button>
+              <Button 
+                onClick={onUpdateTemplateSettings} 
+                disabled={isUpdating}
+              >
+                {isUpdating ? "Saving..." : "Save Template Settings"}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
