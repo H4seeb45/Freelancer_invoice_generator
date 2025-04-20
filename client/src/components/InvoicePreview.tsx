@@ -284,6 +284,26 @@ export default function InvoicePreview({
           </div>
         )}
 
+        {/* Payment Actions */}
+        {(invoice.status === InvoiceStatus.PENDING || invoice.status === InvoiceStatus.OVERDUE) && (
+          <div className="mt-8 pt-4 border-t border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">
+              Payment Options
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/invoices/${invoice.id}/pay`}>
+                <Button
+                  size="sm"
+                  disabled={isLoading}
+                  className="bg-primary text-white hover:bg-primary/90"
+                >
+                  <CreditCardIcon className="w-4 h-4 mr-2" /> Pay Online
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Status Actions */}
         {invoice.status !== InvoiceStatus.PAID && (
           <div className="mt-8 pt-4 border-t border-gray-200">
