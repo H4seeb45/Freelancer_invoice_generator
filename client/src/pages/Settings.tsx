@@ -122,17 +122,35 @@ export default function Settings() {
   });
 
   // Update profile
-  const onUpdateProfile = (data: ProfileFormValues) => {
+  const onUpdateProfile = async (data: ProfileFormValues) => {
     setIsUpdating(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const updatedProfile = await response.json();
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
       });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsUpdating(false);
-    }, 1000);
+    }
   };
 
   // Update invoice settings

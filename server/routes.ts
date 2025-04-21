@@ -41,6 +41,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Current user is now handled by the auth module
   
+  // Update user profile
+  apiRouter.put('/user/profile', isAuthenticated, async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    try {
+      const updatedUser = await storage.updateUser(userId, req.body);
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to update profile' });
+    }
+  });
+  
   // Dashboard stats - requires authentication
   apiRouter.get('/dashboard/stats', isAuthenticated, async (req: Request, res: Response) => {
     const userId = req.user!.id;

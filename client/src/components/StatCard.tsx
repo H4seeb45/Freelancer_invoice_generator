@@ -13,7 +13,7 @@ export default function StatCard({ title, value, icon, bgColor, href }: StatCard
     <>
       <div className="p-5">
         <div className="flex items-center">
-          <div className={`flex-shrink-0 p-3 text-white ${bgColor} rounded`}>
+          <div className={`flex-shrink-0 p-3 text-white ${bgColor} rounded-lg`}>
             {icon}
           </div>
           <div className="flex-1 w-0 ml-5">
