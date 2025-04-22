@@ -1,8 +1,6 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardStats, Invoice } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
 
@@ -15,27 +13,38 @@ export default function Analytics() {
     queryKey: ['/api/invoices'],
   });
 
-  // Calculate and sort monthly revenue data
   const monthlyRevenue = invoices?.reduce((acc: any[], invoice) => {
     const date = new Date(invoice.issueDate);
     const month = date.toLocaleString('default', { month: 'short' });
     const monthOrder = date.getMonth();
-    
+
     const existingMonth = acc.find(item => item.month === month);
-    
+
     if (existingMonth) {
       existingMonth.revenue += Number(invoice.total);
     } else {
       acc.push({ month, monthOrder, revenue: Number(invoice.total) });
     }
     return acc;
-  }, [])
-    .sort((a, b) => a.monthOrder - b.monthOrder) || [];
+  }, []).sort((a, b) => a.monthOrder - b.monthOrder) || [];
 
   const statusData = [
     { name: 'Pending', value: stats?.pendingPayment || 0 },
     { name: 'Paid', value: stats?.paid || 0 },
   ];
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+
+    return (
+      <div className="bg-white p-3 border rounded-lg shadow-sm">
+        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-sm font-semibold">
+          {formatCurrency(payload[0].value)}
+        </p>
+      </div>
+    );
+  };
 
   return (
     <div className="p-6">
@@ -50,34 +59,16 @@ export default function Analytics() {
             <CardTitle>Monthly Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer className="h-[350px]" config={{
-              revenue: { theme: { light: "#0ea5e9", dark: "#38bdf8" } }
-            }}>
-              <BarChart data={monthlyRevenue}>
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    return (
-                      <div className="rounded-lg border bg-background p-3 shadow-sm">
-                        <div className="grid gap-2">
-                          <div className="flex flex-col">
-                            <span className="text-[0.70rem] uppercase text-muted-foreground">
-                              {payload[0].payload.month}
-                            </span>
-                            <span className="font-bold text-foreground">
-                              {formatCurrency(payload[0].value)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" />
-              </BarChart>
-            </ChartContainer>
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyRevenue}>
+                  <XAxis dataKey="month" />
+                  <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="revenue" fill="#2563eb" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -86,38 +77,19 @@ export default function Analytics() {
             <CardTitle>Invoice Status Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer className="h-[350px]" config={{
-              pending: { theme: { light: "#f97316", dark: "#fb923c" } },
-              paid: { theme: { light: "#22c55e", dark: "#4ade80" } }
-            }}>
-              <BarChart data={statusData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    return (
-                      <div className="rounded-lg border bg-background p-3 shadow-sm">
-                        <div className="grid gap-2">
-                          <div className="flex flex-col">
-                            <span className="text-[0.70rem] uppercase text-muted-foreground">
-                              {payload[0].payload.name}
-                            </span>
-                            <span className="font-bold text-foreground">
-                              {payload[0].value} invoices
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-                <Bar 
-                  dataKey="value" 
-                  fill={({ name }) => name === 'Pending' ? 'var(--color-pending)' : 'var(--color-paid)'}
-                />
-              </BarChart>
-            </ChartContainer>
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statusData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar 
+                    dataKey="value" 
+                    fill="#2563eb"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
