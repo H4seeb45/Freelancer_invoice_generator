@@ -17,6 +17,7 @@ import Layout from "@/components/Layout";
 import { InvoiceProvider } from "./context/InvoiceContext";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
+import Analytics from "@/pages/Analytics"; // Import the Analytics component
 
 function MainApp() {
   const { user, isLoading } = useAuth();
@@ -49,7 +50,16 @@ function MainApp() {
           {(params) => <InvoiceDetails params={params} />}
         </Route>
         <Route path="/clients" component={Clients} />
-        <Route path="/settings" component={Settings} />
+        <Route path="/analytics" component={() => (
+          <ProtectedRoute>
+            <Analytics />
+          </ProtectedRoute>
+        )} />
+        <Route path="/settings" component={() => (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        )} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
