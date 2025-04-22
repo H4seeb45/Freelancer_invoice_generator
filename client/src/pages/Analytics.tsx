@@ -48,6 +48,8 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <ChartContainer className="h-[300px]" config={{
+              pending: { theme: { light: "#f97316", dark: "#fb923c" } },
+              paid: { theme: { light: "#22c55e", dark: "#4ade80" } },
               revenue: { theme: { light: "#0ea5e9", dark: "#38bdf8" } }
             }}>
               <BarChart data={monthlyRevenue}>
