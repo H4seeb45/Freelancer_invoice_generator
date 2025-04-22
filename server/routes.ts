@@ -447,12 +447,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Create subscription session
+  apiRouter.post('/create-subscription', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: 'Premium Subscription',
+                description: 'Unlimited clients and invoices',
+              },
+              unit_amount: 199, // $1.99
+              recurring: {
+                interval: 'month',
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: `${req.protocol}://${req.get('host')}/subscription?success=true`,
+        cancel_url: `${req.protocol}://${req.get('host')}/subscription?canceled=true`,
+        customer_email: req.user?.username,
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      res.status(500).json({ message: 'Failed to create subscription' });
+    }
+  });
+
   // Webhook for Stripe events
-  apiRouter.post('/stripe-webhook', async (req: Request, res: Response) => {
-    // This endpoint would be used for receiving webhook events from Stripe
-    // For production, you would need to verify the webhook signature
+  apiRouter.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'];
     
-    res.status(200).json({ received: true });
+    try {
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig!,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+      
+      switch (event.type) {
+        case 'checkout.session.completed':
+          const session = event.data.object;
+          // Update user's subscription status in database
+          await storage.updateUserSubscription(session.customer_email, 'premium');
+          break;
+      }
+      
+      res.json({ received: true });
+    } catch (err) {
+      console.error('Webhook Error:', err);
+      res.status(400).send(`Webhook Error: ${err.message}`);
+    }
   });
 
   const httpServer = createServer(app);

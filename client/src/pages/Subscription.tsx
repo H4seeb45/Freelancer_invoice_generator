@@ -80,6 +80,24 @@ export default function Subscription() {
               <Button
                 className="w-full"
                 variant={plan.name === "Premium" ? "default" : "outline"}
+                onClick={async () => {
+                  if (plan.name === "Premium") {
+                    try {
+                      const res = await fetch("/api/create-subscription", {
+                        method: "POST",
+                      });
+                      if (!res.ok) throw new Error("Failed to create subscription");
+                      const { url } = await res.json();
+                      window.location.href = url;
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to process subscription",
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                }}
               >
                 Choose {plan.name}
               </Button>
