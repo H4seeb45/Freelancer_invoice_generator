@@ -83,9 +83,15 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 3);
+      
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
+        plan: "trial",
+        trialEndsAt,
+        subscriptionStatus: "active",
       });
 
       req.login(user, (err) => {

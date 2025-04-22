@@ -86,9 +86,12 @@ export default function AuthPage() {
       <div className="w-full lg:w-1/2 p-6 flex items-center justify-center">
         <Card className="w-full max-w-md mx-auto rounded-xl shadow-md overflow-hidden">
           <CardContent className="p-6">
-            <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+            <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
               Invoice Generator
             </h2>
+            <p className="text-center text-sm text-gray-600 mb-6">
+              Start your 3-day free trial today
+            </p>
             <Tabs 
               defaultValue="login" 
               className="w-full" 

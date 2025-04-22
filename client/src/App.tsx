@@ -17,6 +17,7 @@ import Layout from "@/components/Layout";
 import { InvoiceProvider } from "./context/InvoiceContext";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
+import Subscription from "./pages/Subscription"; // Added import
 
 function MainApp() {
   const { user, isLoading } = useAuth();
@@ -50,6 +51,7 @@ function MainApp() {
         </Route>
         <Route path="/clients" component={Clients} />
         <Route path="/settings" component={Settings} />
+        <Route path="/subscription" component={Subscription} /> {/* Added route */}
         <Route component={NotFound} />
       </Switch>
     </Layout>

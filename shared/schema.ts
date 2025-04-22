@@ -13,6 +13,9 @@ export const users = pgTable("users", {
   phone: text("phone"),
   companyName: text("company_name"),
   companyLogo: text("company_logo"),
+  plan: text("plan").default("trial").notNull(),
+  trialEndsAt: timestamp("trial_ends_at"),
+  subscriptionStatus: text("subscription_status").default("active"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
