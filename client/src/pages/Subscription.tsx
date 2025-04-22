@@ -1,54 +1,65 @@
-
 import { useUser } from "../context/UserContext";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckIcon } from "lucide-react";
 
 export default function Subscription() {
   const { user } = useUser();
-  
+
   const plans = [
     {
       name: "Standard",
-      price: "$9.99/mo",
-      features: [
-        "1 Client",
-        "1 Invoice",
-        "Basic Analytics",
-        "Email Support"
-      ]
+      price: "Free",
+      features: ["1 Client", "1 Invoice", "Basic Analytics", "Email Support"],
     },
     {
       name: "Premium",
-      price: "$24.99/mo",
+      price: "$1.99/mo",
       features: [
         "Unlimited Clients",
         "Unlimited Invoices",
         "Advanced Analytics",
         "Priority Support",
-        "Custom Branding"
-      ]
-    }
+        "Custom Branding",
+      ],
+    },
   ];
 
-  const daysLeft = user?.trialEndsAt ? 
-    Math.max(0, Math.ceil((new Date(user.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) 
+  const daysLeft = user?.trialEndsAt
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(user.trialEndsAt).getTime() - new Date().getTime()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      )
     : 0;
-
+  console.log(user?.plan);
   return (
     <div className="container mx-auto py-8">
       {user?.plan === "trial" && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
           <h3 className="font-semibold text-yellow-800">Trial Period</h3>
           <p className="text-yellow-700">
-            You have {daysLeft} days left in your trial. Choose a plan to continue using all features.
+            You have {daysLeft} days left in your trial. Choose a plan to
+            continue using all features.
           </p>
         </div>
       )}
 
       <div className="grid md:grid-cols-2 gap-6">
         {plans.map((plan) => (
-          <Card key={plan.name} className={plan.name === "Premium" ? "border-primary" : ""}>
+          <Card
+            key={plan.name}
+            className={plan.name === "Premium" ? "border-primary" : ""}
+          >
             <CardHeader>
               <CardTitle>{plan.name}</CardTitle>
               <CardDescription>
@@ -65,8 +76,11 @@ export default function Subscription() {
                 ))}
               </ul>
             </CardContent>
-            <CardFooter>
-              <Button className="w-full" variant={plan.name === "Premium" ? "default" : "outline"}>
+            <CardFooter className="mt-auto">
+              <Button
+                className="w-full"
+                variant={plan.name === "Premium" ? "default" : "outline"}
+              >
                 Choose {plan.name}
               </Button>
             </CardFooter>
