@@ -82,7 +82,7 @@ export default function Dashboard() {
           title="Total Revenue"
           value={isLoadingStats ? "Loading..." : formatCurrency(stats?.totalRevenue || 0)}
           icon={<DollarSignIcon className="w-6 h-6" />}
-          bgColor="accent"
+          bgColor="primary"
           href="/invoices?status=paid"
         />
       </div>
