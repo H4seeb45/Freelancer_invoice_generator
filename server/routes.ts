@@ -471,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         success_url: `${req.protocol}://${req.get('host')}/subscription?success=true`,
         cancel_url: `${req.protocol}://${req.get('host')}/subscription?canceled=true`,
-        customer_email: req.user?.username,
+        customer_email: `${req.user?.username}@example.com`, // Temporary email format for testing
       });
 
       res.json({ url: session.url });
