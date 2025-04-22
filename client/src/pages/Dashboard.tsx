@@ -61,28 +61,28 @@ export default function Dashboard() {
           title="Invoices Issued"
           value={isLoadingStats ? "Loading..." : stats?.invoicesIssued.toString() || "0"}
           icon={<FileTextIcon className="w-6 h-6" />}
-          bgColor="bg-primary"
+          bgColor="primary"
           href="/invoices"
         />
         <StatCard
           title="Pending Payment"
           value={isLoadingStats ? "Loading..." : stats?.pendingPayment.toString() || "0"}
           icon={<ClockIcon className="w-6 h-6" />}
-          bgColor="bg-warning"
+          bgColor="destructive"
           href="/invoices?status=pending"
         />
         <StatCard
           title="Paid"
           value={isLoadingStats ? "Loading..." : stats?.paid.toString() || "0"}
           icon={<CheckIcon className="w-6 h-6" />}
-          bgColor="bg-success"
+          bgColor="primary"
           href="/invoices?status=paid"
         />
         <StatCard
           title="Total Revenue"
           value={isLoadingStats ? "Loading..." : formatCurrency(stats?.totalRevenue || 0)}
           icon={<DollarSignIcon className="w-6 h-6" />}
-          bgColor="bg-accent"
+          bgColor="accent"
           href="/invoices?status=paid"
         />
       </div>
