@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Subscription() {
   const { user } = useUser();
+  const { toast } = useToast();
 
   const plans = [
     {
